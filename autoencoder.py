@@ -138,7 +138,13 @@ predictions = autoencoder.predict(X_test_scaled)
 
 mse = np.mean(np.power(X_test_scaled - predictions, 2), axis=1)
 df_error = pd.DataFrame({'reconstruction_error': mse, 'Label': y_test}, index=y_test.index)
-print(df_error.describe())
+ret = df_error.describe()
+print(ret)
+input = ret.strip().split("\n")[3]
+std_deviation = float(re.sub(r'\s+', " ", input).split(" ")[-1])
+
+sigma_level = 15
+threshold = sigma_level * std_deviation
 
 data_n = pd.DataFrame(X_test_scaled, index= y_test.index, columns=numerical_cols[0:-1])
 def compute_error_per_dim(point):
@@ -148,7 +154,7 @@ def compute_error_per_dim(point):
     
     return abs(np.array(initial_pt  - reconstrcuted_pt)[0])
 
-outliers = df_error.index[df_error.reconstruction_error > 1.581557e-03].tolist()
+outliers = df_error.index[df_error.reconstruction_error > threshold].tolist()
 for val in outliers:
     print(df.loc[val])  
 print(outliers)
