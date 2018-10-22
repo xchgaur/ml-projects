@@ -6,6 +6,7 @@ import tensorflow as tf
 from tensorflow.contrib import rnn
 import time
 import random
+import pickle
 
 
 start_time = time.time()
@@ -44,21 +45,28 @@ print("Length of training data is {}".format(len(training_data)))
 
 dictionary, reverse_dictionary = build_dataset(training_data)
 
+#pickle the dicts
+with open('simple_lstm_dictionary.pickle','wb') as f:
+    pickle.dump(dictionary,f)
+with open('simple_lstm_reverse_dictionary.pickle','wb') as f:
+    pickle.dump(reverse_dictionary,f)
+
 print("number of keys in dict are : {}".format(len(dictionary.keys())))
 print(dictionary)
 
 
 # Parameters
 learning_rate = 0.001
-training_iters = 90000
+training_iters = 30000
 display_step = 1000
-n_input = 3
+n_input = 5
 
 # number of units in RNN cell
 n_hidden = 512
 
 
 #initial variables
+tf.reset_default_graph()
 
 vocab_size = len(dictionary)
 # RNN output node weights and biases
@@ -99,6 +107,7 @@ def RNN(x, weights, biases):
     # we only want the last output
     return tf.matmul(outputs[-1], weights['out']) + biases['out']
 
+saver = tf.train.Saver()
 pred = RNN(x, weights, biases)
 
 
@@ -147,6 +156,10 @@ with tf.Session() as session:
         loss_total += loss
         acc_total += acc
         if (step+1) % display_step == 0:
+            epoch = int(step/display_step)
+            print(epoch)
+            ckpt_path = './models/test-model.ckpt'
+            saver.save(session, ckpt_path, global_step=epoch)
             print("Iter= " + str(step+1) + ", Average Loss= " + \
                   "{:.6f}".format(loss_total/display_step) + ", Average Accuracy= " + \
                   "{:.2f}%".format(100*acc_total/display_step))
@@ -156,7 +169,7 @@ with tf.Session() as session:
             symbols_out = training_data[offset + n_input]
             symbols_out_pred = reverse_dictionary[int(tf.argmax(onehot_pred, 1).eval())]
             print("%s - [%s] vs [%s]" % (symbols_in,symbols_out,symbols_out_pred))
-
+        saver.save(session, "./models/test-model-final.ckpt")
         step += 1
         offset += (n_input+1)
 
@@ -166,6 +179,30 @@ with tf.Session() as session:
     print("\ttensorboard --logdir=%s" % (logs_path))
     print("Point your web browser to: http://localhost:6006/")
 
+    while True:
+        prompt = "%s words: " % n_input
+        sentence = input(prompt)
+        sentence = sentence.strip()
+        words = sentence.split(' ')
+        if len(words) != n_input:
+            continue
+        try:
+            symbols_in_keys = [dictionary[str(words[i])] for i in range(len(words))]
+            print(symbols_in_keys)
+            for i in range(5):
+                keys = np.reshape(np.array(symbols_in_keys), [-1, n_input, 1])
+                print(keys)
+                onehot_pred = session.run(pred, feed_dict={x: keys})
+                print(onehot_pred)
+                onehot_pred_index = int(tf.argmax(onehot_pred, 1).eval())
+                print(onehot_pred_index)
+                print(reverse_dictionary[onehot_pred_index])
+                sentence = "%s %s" % (sentence,reverse_dictionary[onehot_pred_index])
+                symbols_in_keys = symbols_in_keys[1:]
+                symbols_in_keys.append(onehot_pred_index)
+            print(sentence)
+        except:
+            print("Word not in dictionary")
 """
 #below lines will show teh freq distribution of words
 
