@@ -55,7 +55,19 @@ def process_details():
     df = pandas.read_csv('temp.csv',index_col=0)
     print(df.head())
     print(df.tail())
+    y = df.index
+    y = y.astype('float32')
 
+    next_slot = int(y[1] - y[0])
+    temp = int(y[2] - y[1])
+    temp2  = int(y[3] - y[2])
+
+    if (next_slot != temp or next_slot != temp2):
+        next_slot = 300 *int((next_slot + temp + temp2)/900)
+    print("Next slot is {}".format(next_slot))
+     
+
+    
     last_unix = df.index.max()
     print("Last dat is {}".format(last_unix))
 
@@ -85,7 +97,9 @@ def process_details():
 
 
     # reshape into X=t and Y=t+1
-    look_back = 70 
+    look_back = int(70 * 1800.0/next_slot)
+    print("Look back is {}".format(look_back))
+
     trainX, trainY = create_dataset(train, look_back)
     testX, testY = create_dataset(test, look_back)
 
@@ -140,11 +154,11 @@ def process_details():
     print("\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n\tGoing to predict future values\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
     ref = dataset[len(dataset)-look_back:, 0]
 
-    next_slot = 60 * 30
+    #next_slot = 60 * 30
     next_unix = last_unix + next_slot
 
     insight_predictions = []
-    num_of_predictions = 200
+    num_of_predictions = int(350 * 1800.0/next_slot)
     for i in range(num_of_predictions):
         sample = []
         sample.append(ref)
