@@ -1,18 +1,19 @@
 import warnings
 import numpy
 import pandas
-import matplotlib
+#import matplotlib
 #import seaborn
-import plotly
+#import plotly
 import tensorflow
 import keras
 import pickle
+import re
 
 print('Numpy version      :' , numpy.__version__)
 print('Pandas version     :' ,pandas.__version__)
-print('Matplotlib version :' ,matplotlib.__version__)
+#print('Matplotlib version :' ,matplotlib.__version__)
 #print('Seaborn version    :' , seaborn.__version__)
-print('Plotly version     :', plotly.__version__)
+#print('Plotly version     :', plotly.__version__)
 print('Tensorflow version :' , tensorflow.__version__)
 print('Keras version      :' , keras.__version__)
 
@@ -43,7 +44,7 @@ from sklearn.metrics import (confusion_matrix, classification_report, accuracy_s
                              precision_recall_fscore_support)
 
 
-df = pd.read_csv('bare.csv',index_col=0)
+df = pd.read_csv('final_stats.csv',index_col=0)
 #df = df.drop(columns='time')
 print(df.index)
 print(df.head())
@@ -54,7 +55,7 @@ print(df.Label.value_counts())
 print(df.Label.value_counts(normalize=True)*100)
 print(df.columns)
 
-numerical_cols = ['cpu', 'inbw', 'outBw', 'memory', 'Label']
+numerical_cols = ['memory', 'cpu', 'disk', 'inbw', 'outBw', 'Label']
 print(df.Label.unique())
 
 labels = df['Label'].astype(int)
@@ -133,14 +134,16 @@ print('Time to run the model: {} Sec.'.format((t_fin - t_ini).total_seconds()))
 
 df_history = pd.DataFrame(history.history)
 
-
+autoencoder.save('my_model.h5')
 predictions = autoencoder.predict(X_test_scaled)
 
 mse = np.mean(np.power(X_test_scaled - predictions, 2), axis=1)
 df_error = pd.DataFrame({'reconstruction_error': mse, 'Label': y_test}, index=y_test.index)
 ret = df_error.describe()
+print(type(ret))
+
 print(ret)
-input = ret.strip().split("\n")[3]
+input = str(ret).strip().split("\n")[3]
 std_deviation = float(re.sub(r'\s+', " ", input).split(" ")[-1])
 
 sigma_level = 15
@@ -149,7 +152,7 @@ threshold = sigma_level * std_deviation
 data_n = pd.DataFrame(X_test_scaled, index= y_test.index, columns=numerical_cols[0:-1])
 def compute_error_per_dim(point):
     
-    initial_pt = np.array(data_n.loc[point,:]).reshape(1,4)
+    initial_pt = np.array(data_n.loc[point,:]).reshape(1,5)
     reconstrcuted_pt = autoencoder.predict(initial_pt)
     
     return abs(np.array(initial_pt  - reconstrcuted_pt)[0])
@@ -170,8 +173,8 @@ for ind in outliers:
 RE_per_dim = pd.DataFrame(RE_per_dim, index= numerical_cols[:-1]).T
 print(RE_per_dim.head())
 
-print(df_error.loc[1387])
-print(data_n.loc[1387])
+#print(df_error.loc[1387])
+#print(data_n.loc[1387])
 
-print(autoencoder.predict(np.array(data_n.loc[1387]).reshape(1,4)))
+#print(autoencoder.predict(np.array(data_n.loc[1387]).reshape(1,4)))
 

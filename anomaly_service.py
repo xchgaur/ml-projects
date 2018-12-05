@@ -43,7 +43,7 @@ def process_details():
         res = {'success': False, 'status_code': status_code, 'message': 'Unsupported request type.Please contact support team.'}
         return jsonify(res)
 
-    loaded = load_model('am_detect.h5')
+    loaded = load_model('my_model.h5')
     df = pd.read_csv(f,index_col=0)
     print(df.head())
 
@@ -68,7 +68,7 @@ def process_details():
     std_deviation = float(re.sub(r'\s+', " ", input).split(" ")[-1])
     print(std_deviation)
 
-    sigma_level = 4
+    sigma_level = 15
     threshold = sigma_level * std_deviation
 
     outliers = df_error.index[df_error.reconstruction_error > threshold].tolist()
